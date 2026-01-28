@@ -41,29 +41,34 @@ MODEL_NAME = "claude-sonnet-4-20250514"
 
 def get_weather(city):
     """Get real weather data from wttr.in (free, no API key needed)."""
-    try:
-        # wttr.in is a free weather API -- just send a GET request!
-        response = httpx.get(
-            f"https://wttr.in/{city}?format=j1",
-            timeout=10.0,
-        )
-        data = response.json()
+    # wttr.in is a free weather API -- just send a GET request!
+    # We try twice in case of a slow connection
+    for attempt in range(2):
+        try:
+            response = httpx.get(
+                f"https://wttr.in/{city}?format=j1",
+                timeout=30.0,
+                headers={"User-Agent": "curl/7.68.0"},
+            )
+            data = response.json()
 
-        # Pull out the current conditions
-        current = data["current_condition"][0]
-        temp_c = current["temp_C"]
-        temp_f = current["temp_F"]
-        description = current["weatherDesc"][0]["value"]
-        humidity = current["humidity"]
-        wind_mph = current["windspeedMiles"]
+            # Pull out the current conditions
+            current = data["current_condition"][0]
+            temp_c = current["temp_C"]
+            temp_f = current["temp_F"]
+            description = current["weatherDesc"][0]["value"]
+            humidity = current["humidity"]
+            wind_mph = current["windspeedMiles"]
 
-        return (
-            f"Weather in {city}: {temp_c}°C ({temp_f}°F), "
-            f"{description}, Humidity: {humidity}%, "
-            f"Wind: {wind_mph} mph"
-        )
-    except Exception as e:
-        return f"Could not fetch weather for {city}: {e}"
+            return (
+                f"Weather in {city}: {temp_c}°C ({temp_f}°F), "
+                f"{description}, Humidity: {humidity}%, "
+                f"Wind: {wind_mph} mph"
+            )
+        except Exception as e:
+            if attempt == 0:
+                continue  # Retry once
+            return f"Could not fetch weather for {city}: {e}"
 
 
 def calculator(operation, a, b):
